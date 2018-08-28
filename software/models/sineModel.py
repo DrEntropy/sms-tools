@@ -167,26 +167,30 @@ def sineModelMultiRes(x, fs, w, N, t,B):
 	bh = bh / sum(bh)                                       # normalized blackmanharris window
 	sw[hNs-H:hNs+H] = sw[hNs-H:hNs+H] / bh[hNs-H:hNs+H]     # normalized synthesis window
 
-	B = [(0,Ba),(Ba,Bb),(Bb,22050)]							# set up bands
-
+	B = [(0,B[0]),(B[0],B[1]),(B[1],22050)]							# set up bands
+	ipfreq = [0,0,0]
+	ipphase =[0,0,0]
+	ipmag =[0,0,0]
 	while pin<pend:                                         # while input sound pointer is within sound
 	#-----analysis----- Basically unchanged but done three times, ecept i get rid of frequencies not in band
-		x1 = x[pin-hM1:pin+hM2]                               # select frame
+
 		for i in range(0,3):								# here we mandate three bands!
+			x1 = x[pin-hM1s[i]:pin+hM2s[i]]                               # select frame
 			mX, pX = DFT.dftAnal(x1, w[i], N[i])                        # compute dft
 			ploc = UF.peakDetection(mX, t)                        # detect locations of peaks
 			iploc, ipmagt, ipphaset = UF.peakInterp(mX, pX, ploc)   # refine peak values by interpolation
 			ipfreqt = fs*iploc/float(N[i])                            # convert peak locations to Her
-			indexes = [j for (j,f) in enumerate(ipfreqtemp) if f >= B[i,0] and f < B[i,1] ]    # filter out of band peaks
-			ipfreq[i] = [ipfreqt[j] for j in indexes]			# There must be an easier way, but here are rebuild
-			ipphase[i] = [ipphaset[j] for j in indexes]			# with only the indexes where the freq is in range
-			ipmag[i] = [ipmagt[j] for j in indexes]
+
+			indexes = [j for (j,f) in enumerate(ipfreqt) if f >= B[i][0] and f < B[i][1] ]    # filter out of band peaks
+			ipfreq[i] = ipfreqt[indexes]			# There must be an easier way, but here are rebuild
+			ipphase[i] = ipphaset[indexes]			# with only the indexes where the freq is in range
+			ipmag[i] = ipmagt[indexes]
 		# Combine the peaks into single combined analysis. This is verbose but clear
 
-		ipfreqC = ipfreq[0] + ipfreq[1] +ipfreq[2]
-		ipphaseC =  ipphase[0] + ipphase[1] +ipphase[2]
-		ipmagC =  ipmag[0] + ipmag[1] +ipmag[2]
-		
+		ipfreqC = np.concatenate((ipfreq[0],ipfreq[1],ipfreq[2]))
+		ipphaseC =  np.concatenate((ipphase[0] , ipphase[1] ,ipphase[2]))
+		ipmagC =  np.concatenate((ipmag[0],ipmag[1],ipmag[2]))
+
 	#-----synthesis-----   completely unchanged.
 
 		Y = UF.genSpecSines(ipfreqC, ipmagC, ipphaseC, Ns, fs)   # generate sines in the spectrum

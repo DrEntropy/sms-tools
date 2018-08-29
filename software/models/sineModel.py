@@ -192,7 +192,7 @@ def sineModelMultiRes(x, fs, w, N, t,B):
 		ipmagC =  np.concatenate((ipmag[0],ipmag[1],ipmag[2]))
 
 	#-----synthesis-----   completely unchanged.
-
+		# import pdb; pdb.set_trace()
 		Y = UF.genSpecSines(ipfreqC, ipmagC, ipphaseC, Ns, fs)   # generate sines in the spectrum
 		fftbuffer = np.real(ifft(Y))                          # compute inverse FFT
 		yw[:hNs-1] = fftbuffer[hNs+1:]                        # undo zero-phase window
